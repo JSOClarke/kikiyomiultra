@@ -70,10 +70,15 @@ export const TimelineDayCard: React.FC<{ day: TimelineDay }> = ({ day }) => {
                  <div key={i} className="px-4 py-3 bg-bg border border-white/5 hover:border-sec/30 hover:bg-surface-hover transition-colors rounded-xl flex flex-col md:flex-row md:items-start justify-between gap-4 group">
                     <div className="flex-1">
                       <p className="text-text font-medium text-[0.9rem] leading-relaxed whitespace-pre-wrap">
-                        {card.subtitleText}
+                        {card.text}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+                      {card.bookTitle && (
+                        <span className="text-[0.65rem] font-bold tracking-wider text-sec max-w-[150px] truncate">
+                          {card.bookTitle}
+                        </span>
+                      )}
                       <span className="text-[0.65rem] font-mono tracking-wider text-text-muted opacity-50 group-hover:opacity-100 transition-opacity">
                          {new Date(card.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </span>
