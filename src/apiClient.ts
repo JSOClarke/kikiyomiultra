@@ -39,7 +39,7 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to delete book');
   },
 
-  async uploadMedia(file: File): Promise<{ path: string, filename: string }> {
+  async uploadMedia(file: File): Promise<{ path: string }> {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -49,6 +49,38 @@ export const apiClient = {
     });
     if (!res.ok) throw new Error('Failed to upload media');
     return res.json();
+  },
+
+  async uploadMangaFolder(files: File[], onProgress: (pct: number) => void): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      files.forEach(f => {
+        // webkitRelativePath contains the actual folder structure which Multer parses natively
+        formData.append('files', f, f.webkitRelativePath || f.name);
+      });
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/upload/manga/folder`, true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          onProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.bookId);
+        } else {
+          reject(new Error(`Upload failed: ${xhr.responseText}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during Manga upload'));
+      xhr.send(formData);
+    });
   },
 
   // Daily Stats Engine

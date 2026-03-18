@@ -8,6 +8,7 @@ import { apiClient } from '../../apiClient';
 export const DropZone: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const isParsing = usePlayerStore(state => state.isParsing);
@@ -141,6 +142,35 @@ export const DropZone: React.FC = () => {
     e.target.value = '';
   };
 
+  const onMangaFolderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setParsingState(true, 5);
+      try {
+        const files = Array.from(e.target.files);
+        // Defend against naked directory uploads avoiding silent server crashes
+        const hasMokuro = files.some(f => f.name.endsWith('.mokuro') || f.name.endsWith('_ocr.json'));
+        if (!hasMokuro) {
+           alert("No .mokuro JSON file found inside this folder! Ensure it was processed by Mokuro first.");
+           setParsingState(false, 0);
+           return;
+        }
+
+        await apiClient.uploadMangaFolder(files, (progress) => {
+          setParsingState(true, 5 + (progress * 0.9));
+        });
+        
+        setParsingState(false, 100);
+        // Fast hard-refresh to synchronize the global Library state implicitly bypassing local injection.
+        window.location.reload(); 
+      } catch (err: any) {
+        console.error(err);
+        alert(`Manga Upload Failed: ${err.message}`);
+        setParsingState(false, 0);
+      }
+    }
+    e.target.value = '';
+  };
+
   return (
     <div
       onClick={onClick}
@@ -168,7 +198,7 @@ export const DropZone: React.FC = () => {
       {isParsing ? (
         <div className="flex flex-col items-center justify-center relative w-full h-full">
            <Loader2 size={32} className="text-primary animate-spin mb-3 shadow-[0_0_15px_rgba(var(--color-primary),0.5)] rounded-full" />
-           <div className="text-sm font-bold text-primary mb-1">Parsing Book...</div>
+           <div className="text-sm font-bold text-primary mb-1">Parsing Content...</div>
            
            <div className="w-full max-w-[12rem] h-2 bg-bg rounded-full mt-2 overflow-hidden shadow-inner">
               <div 
@@ -183,10 +213,36 @@ export const DropZone: React.FC = () => {
             <UploadCloud size={24} />
           </div>
           <div className="text-sm font-bold text-text text-center mb-1">
-            Add New Book
+            Add New Immersion
           </div>
-          <div className="text-xs text-text-muted text-center px-2">
-            Drop .epub, audio, or text
+          <div className="text-xs text-text-muted text-center px-2 mb-6">
+            Click to select an .epub, audio, or text file
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 relative z-10 w-full max-w-sm px-4">
+             <button 
+               onClick={(e) => { e.stopPropagation(); if (!isParsing) fileInputRef.current?.click(); }}
+               className="flex-1 bg-surface hover:bg-surface-hover border border-white/5 text-text-muted hover:text-text font-bold text-[0.7rem] uppercase tracking-widest py-2 rounded-xl transition-colors"
+             >
+               Single File
+             </button>
+             <button 
+               onClick={(e) => { e.stopPropagation(); if (!isParsing) folderInputRef.current?.click(); }}
+               className="flex-1 bg-sec/10 hover:bg-sec/20 border border-sec/20 text-sec font-bold text-[0.7rem] uppercase tracking-widest py-2 rounded-xl transition-colors"
+             >
+               Manga Folder
+             </button>
+             {/* Invisible bindings */}
+             <input 
+               type="file" 
+               multiple
+               // @ts-ignore
+               webkitdirectory=""
+               directory=""
+               ref={folderInputRef} 
+               onChange={onMangaFolderChange} 
+               className="hidden" 
+             />
           </div>
         </>
       )}

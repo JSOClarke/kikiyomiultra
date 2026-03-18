@@ -8,7 +8,12 @@ export interface Subtitle {
   isMined?: boolean;
 }
 
-export type BookType = 'audiobook' | 'epub';
+export interface MangaPage {
+  imageUrl: string;
+  ocrBlocks?: any[]; // The raw JSON blocks extracted from Mokuro
+}
+
+export type BookType = 'audiobook' | 'epub' | 'manga';
 
 export interface BaseBook {
   id: string;
@@ -18,8 +23,9 @@ export interface BaseBook {
   coverBlob?: Blob;
   savedIndex?: number;
   savedTime?: number;
-  subtitles: Subtitle[];
+  subtitles?: Subtitle[];
   originalSubtitles?: Subtitle[];
+  mangaPages?: MangaPage[];
   splitByCommas?: boolean;
   totalSubtitles?: number; // Injected by the API Manifest
   language?: string;
@@ -38,7 +44,13 @@ export interface EpubBook extends BaseBook {
   audioUrl?: never; // Explicitly enforce no audio URL
 }
 
-export type Book = AudioBook | EpubBook;
+export interface MangaBook extends BaseBook {
+  type: 'manga';
+  duration?: never;
+  audioUrl?: never;
+}
+
+export type Book = AudioBook | EpubBook | MangaBook;
 
 export interface MiningHistoryEntry {
   id: string;

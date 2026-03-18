@@ -106,6 +106,95 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   });
 });
 
+// Multipart HTML5 Directory Pipeline for Mokuro OCR Manga
+app.post('/api/upload/manga/folder', upload.array('files'), (req, res) => {
+  if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+    return res.status(400).json({ error: 'No manga folder files detected' });
+  }
+
+  const files = req.files as Express.Multer.File[];
+  
+  // Locate the native Mokuro structural JSON map precisely
+  const mokuroFile = files.find(f => f.originalname.endsWith('.mokuro') || f.originalname.endsWith('_ocr.json'));
+  if (!mokuroFile) {
+    // Clean up stranded multer buffers
+    files.forEach(f => fs.unlinkSync(f.path));
+    return res.status(400).json({ error: 'Missing .mokuro OCR JSON metadata inside directory.' });
+  }
+
+  try {
+    const rawJson = fs.readFileSync(mokuroFile.path, 'utf-8');
+    const mokuroData = JSON.parse(rawJson);
+
+    // Physically allocate a dedicated volume directory decoupling from root uploads
+    const mangaId = `manga_${Date.now()}`;
+    const targetDir = path.join(UPLOADS_DIR, mangaId);
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir);
+
+    const mangaPages: any[] = [];
+    const imageFiles = files.filter(f => f.originalname.match(/\.(jpg|jpeg|png|webp)$/i));
+
+    // Map Images mathematically against the JSON structural array
+    imageFiles.forEach(file => {
+      // webkitdirectory preserves paths (e.g., 'Vol1/001.jpg'). Extract raw basename rigorously.
+      const basename = path.basename(file.originalname);
+      const newPath = path.join(targetDir, basename);
+      
+      // Relocate buffer out of temp into the isolated volume node
+      fs.renameSync(file.path, newPath);
+
+      // Mokuro maps coordinate blocks implicitly via numerical page index, but image basenames often contain numbers. 
+      // To ensure maximum reliability, we just sort them exactly as the OS filesystem does later.
+      mangaPages.push({
+        imageUrl: `/uploads/${mangaId}/${basename}`,
+        originalFilename: basename,
+        ocrBlocks: [] // Will link synchronously underneath
+      });
+    });
+
+    // Morph the JSON pages array over the sorted Image schemas explicitly
+    mangaPages.sort((a, b) => a.originalFilename.localeCompare(b.originalFilename));
+    
+    // Inject the raw Native Mokuro Bounding Boxes physically into our database model!
+    if (mokuroData.pages && Array.isArray(mokuroData.pages)) {
+      mokuroData.pages.forEach((pageData: any, i: number) => {
+        if (mangaPages[i]) {
+          mangaPages[i].ocrBlocks = pageData.blocks || [];
+        }
+      });
+    }
+
+    // Scaffold the core Backend Architecture primitive internally
+    const mangaBook = {
+      id: mangaId,
+      title: mokuroData.title || 'Unknown Manga Volume',
+      author: 'Mokuro OCR',
+      type: 'manga',
+      mangaPages: mangaPages,
+      coverUrl: mangaPages.length > 0 ? mangaPages[0].imageUrl : '',
+      savedIndex: 0,
+      subtitles: [], // Enforce structurally empty array for legacy checks
+      totalSubtitles: mangaPages.length, // Hack to repurpose the Progress Bar for pages!
+      language: 'ja'
+    };
+
+    db.addBook(mangaBook);
+
+    // Garbage collection for temp unused files (like the .json itself)
+    files.forEach(f => {
+      if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+    });
+
+    res.json({ success: true, bookId: mangaId });
+  } catch (error) {
+    console.error("Manga generation failed:", error);
+    files.forEach(f => {
+      if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+    });
+    res.status(500).json({ error: 'Server crashed processing the Mokuro DOM Map.' });
+  }
+});
+
 // Complete Book Creation Payload (from worker)
 app.post('/api/books', (req, res) => {
   const parsedBook = req.body;

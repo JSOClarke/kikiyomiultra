@@ -20,12 +20,19 @@ interface StoreState {
   setReaderFont: (font: string) => void;
   readerFontSize: number;
   setReaderFontSize: (size: number) => void;
+
+  // Manga Settings
+  mangaFontSize: number;
+  setMangaFontSize: (size: number) => void;
+  mangaFontFamily: string;
+  setMangaFontFamily: (font: string) => void;
   
   isSettingsOpen: boolean;
   isBookmarksOpen: boolean;
   isHistoryOpen: boolean;
   isHelpOpen: boolean;
   isAllBooksOpen: boolean;
+  isMangaSettingsOpen: boolean;
   
   openModal: (modalName: string) => void;
   closeModal: (modalName: string) => void;
@@ -87,6 +94,12 @@ export const useStore = create<StoreState>()(
       setReaderFont: (font) => set({ readerFont: font }),
       readerFontSize: 36,
       setReaderFontSize: (size) => set({ readerFontSize: size }),
+
+      // Manga Settings
+      mangaFontSize: 16,
+      setMangaFontSize: (size) => set({ mangaFontSize: size }),
+      mangaFontFamily: 'Noto Sans JP, sans-serif',
+      setMangaFontFamily: (font) => set({ mangaFontFamily: font }),
       
       // Modals State
       isSettingsOpen: false,
@@ -94,6 +107,7 @@ export const useStore = create<StoreState>()(
       isHistoryOpen: false,
       isHelpOpen: false,
       isAllBooksOpen: false,
+      isMangaSettingsOpen: false,
       
       openModal: (modalName) => set({ [modalName as keyof StoreState]: true }),
       closeModal: (modalName) => set({ [modalName as keyof StoreState]: false }),

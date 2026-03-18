@@ -5,6 +5,7 @@ import { AudioControls } from '../components/player/AudioControls';
 import { TextControls } from '../components/player/TextControls';
 import { ChapterSidebar } from '../components/player/ChapterSidebar';
 import { FocusMode } from '../components/player/FocusMode';
+import { MangaPlayerLayout } from '../components/player/MangaPlayerLayout';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useStore } from '../store/useStore';
 
@@ -76,11 +77,15 @@ export const PlayerPage: React.FC = () => {
 
   return (
     <>
-      {/* Hidden Audio Engine - Only render if we have an audio URL */}
-      {activeBook?.type === 'audiobook' && activeBook.audioUrl && (
-        <audio
-          ref={audioRef}
-          src={activeBook.audioUrl}
+      {activeBook?.type === 'manga' ? (
+        <MangaPlayerLayout book={activeBook} />
+      ) : (
+        <>
+          {/* Hidden Audio Engine - Only render if we have an audio URL */}
+          {activeBook?.type === 'audiobook' && activeBook.audioUrl && (
+            <audio
+              ref={audioRef}
+              src={activeBook.audioUrl}
           preload="auto"
           onTimeUpdate={(e) => updateCurrentTime((e.target as HTMLAudioElement).currentTime)}
           onPlay={() => setIsPlaying(true)}
@@ -104,7 +109,9 @@ export const PlayerPage: React.FC = () => {
       
       {activeBook?.type === 'audiobook' ? <AudioControls /> : <TextControls />}
 
-      {isFocusMode && <FocusMode />}
+          {isFocusMode && <FocusMode />}
+        </>
+      )}
     </>
   );
 }
