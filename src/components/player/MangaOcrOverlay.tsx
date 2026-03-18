@@ -40,9 +40,10 @@ export const MangaOcrOverlay: React.FC<MangaOcrOverlayProps> = ({ blocks, natura
              }}
           >
              {/* The exact Mokuro White Box UI Implementation */}
-             <div className="w-full h-full opacity-0 group-hover:opacity-100 bg-white pointer-events-auto transition-opacity duration-150">
+             {/* Note: .pageContainer:hover .textBox -> border: 2px solid rgba(237, 28, 36, 0.5) */}
+             <div className="w-full h-full pointer-events-auto border-[2px] border-transparent hover:border-[#ed1c2480] hover:bg-white hover:z-[999] transition-none absolute inset-0">
                  <p 
-                   className="text-black font-semibold select-text w-full h-full"
+                   className="text-black font-semibold select-text w-full h-full opacity-0 group-hover:opacity-100 m-0"
                    style={{
                      writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
                      fontSize: `${mangaFontSize}px`,
