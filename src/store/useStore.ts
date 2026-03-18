@@ -1,0 +1,181 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { MiningHistoryEntry, Bookmark } from '../types';
+import { apiClient } from '../apiClient';
+
+type Theme = 'kiku-dark' | 'kiku-light' | 'matcha';
+
+interface StoreState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  
+  isFocusMode: boolean;
+  toggleFocusMode: () => void;
+
+  // Typography Settings
+  readerFont: string;
+  setReaderFont: (font: string) => void;
+  readerFontSize: number;
+  setReaderFontSize: (size: number) => void;
+  
+  isSettingsOpen: boolean;
+  isBookmarksOpen: boolean;
+  isHistoryOpen: boolean;
+  isHelpOpen: boolean;
+  isAllBooksOpen: boolean;
+  
+  openModal: (modalName: string) => void;
+  closeModal: (modalName: string) => void;
+
+  // Anki Integration Config
+  ankiField: string;
+  ankiPictureField: string;
+  ankiAddCover: boolean;
+  ankiAddTag: boolean;
+  setAnkiSettings: (settings: Partial<Pick<StoreState, 'ankiField' | 'ankiPictureField' | 'ankiAddCover' | 'ankiAddTag'>>) => void;
+
+  // History State
+  miningHistory: MiningHistoryEntry[];
+  addMiningHistory: (entry: Omit<MiningHistoryEntry, 'id' | 'timestamp'>) => void;
+  clearMiningHistory: () => void;
+
+  // Bookmarks
+  bookmarks: Bookmark[];
+  addBookmark: (bookmark: Bookmark) => void;
+  removeBookmark: (id: string) => void;
+
+  // Goals & Streaks
+  dailyGoals: {
+    cardsMined: number;
+    timeReadSeconds: number;
+    charactersRead: number;
+    wordsRead: number;
+  };
+  setDailyGoals: (goals: Partial<StoreState['dailyGoals']>) => void;
+  lastGoalMetDate: string | null;
+  setLastGoalMetDate: (date: string) => void;
+
+  // Pomodoro
+  pomodoroTimeLeft: number;
+  pomodoroMode: 'focus' | 'break';
+  isPomodoroActive: boolean;
+  pomodoroFocusDuration: number;
+  pomodoroBreakDuration: number;
+  setPomodoroState: (state: Partial<StoreState>) => void;
+}
+
+export const useStore = create<StoreState>()(
+  persist(
+    (set) => ({
+      // Theme State
+      theme: 'kiku-dark',
+      setTheme: (theme) => set({ theme }),
+      
+      // Layout State
+      isSidebarCollapsed: false,
+      toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+      
+      // Feature State
+      isFocusMode: false,
+      toggleFocusMode: () => set((state) => ({ isFocusMode: !state.isFocusMode })),
+
+      // Typography Settings
+      readerFont: 'system-ui, -apple-system, sans-serif',
+      setReaderFont: (font) => set({ readerFont: font }),
+      readerFontSize: 36,
+      setReaderFontSize: (size) => set({ readerFontSize: size }),
+      
+      // Modals State
+      isSettingsOpen: false,
+      isBookmarksOpen: false,
+      isHistoryOpen: false,
+      isHelpOpen: false,
+      isAllBooksOpen: false,
+      
+      openModal: (modalName) => set({ [modalName as keyof StoreState]: true }),
+      closeModal: (modalName) => set({ [modalName as keyof StoreState]: false }),
+
+      // Anki Config defaults
+      ankiField: 'SentenceAudio',
+      ankiPictureField: 'Picture',
+      ankiAddCover: true,
+      ankiAddTag: true,
+      setAnkiSettings: (settings) => set({ ...settings }),
+
+      // History
+      miningHistory: [],
+      addMiningHistory: (entry) => set((state) => {
+        const newEntry: MiningHistoryEntry = {
+          ...entry,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+        };
+        // Keep last 200 entries (matching legacy behavior)
+        const newHistory = [newEntry, ...state.miningHistory].slice(0, 200);
+        
+        apiClient.addMiningHistory(newEntry).catch(console.warn);
+        
+        return { miningHistory: newHistory };
+      }),
+      clearMiningHistory: () => set({ miningHistory: [] }),
+
+      // Bookmarks Network Synchronization
+      bookmarks: [],
+      addBookmark: (bookmark) => set((state) => {
+        const payload = [bookmark, ...state.bookmarks];
+        apiClient.addBookmark(bookmark).catch(console.warn);
+        return { bookmarks: payload };
+      }),
+      removeBookmark: (id) => set((state) => {
+        const payload = state.bookmarks.filter(b => b.id !== id);
+        apiClient.removeBookmark(id).catch(console.warn);
+        return { bookmarks: payload };
+      }),
+
+      // Goals Config
+      dailyGoals: {
+        cardsMined: 10,
+        timeReadSeconds: 1800, // 30 minutes
+        charactersRead: 5000,
+        wordsRead: 1000
+      },
+      setDailyGoals: (goals) => set((state) => {
+        const newMap = { ...state.dailyGoals, ...goals };
+        apiClient.updateGoals(newMap).catch(console.warn);
+        return { dailyGoals: newMap };
+      }),
+      lastGoalMetDate: null,
+      setLastGoalMetDate: (date) => {
+        apiClient.updateLastGoalDate(date).catch(console.warn);
+        set({ lastGoalMetDate: date });
+      },
+
+      // Pomodoro defaults
+      pomodoroTimeLeft: 25 * 60,
+      pomodoroMode: 'focus',
+      isPomodoroActive: false,
+      pomodoroFocusDuration: 25,
+      pomodoroBreakDuration: 5,
+      setPomodoroState: (newState) => set((state) => ({ ...state, ...newState })),
+    }),
+    {
+      name: 'kikiyomi-settings',
+      partialize: (state) => ({ 
+        theme: state.theme,
+        readerFont: state.readerFont,
+        readerFontSize: state.readerFontSize,
+        isSidebarCollapsed: state.isSidebarCollapsed,
+        ankiField: state.ankiField,
+        ankiPictureField: state.ankiPictureField,
+        ankiAddCover: state.ankiAddCover,
+        ankiAddTag: state.ankiAddTag,
+        miningHistory: state.miningHistory,
+        pomodoroFocusDuration: state.pomodoroFocusDuration,
+        pomodoroBreakDuration: state.pomodoroBreakDuration
+      }),
+    }
+  )
+);
