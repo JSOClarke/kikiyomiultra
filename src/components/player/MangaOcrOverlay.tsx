@@ -24,10 +24,7 @@ export const MangaOcrOverlay: React.FC<MangaOcrOverlayProps> = ({ blocks, natura
         const width = ((x_max - x_min) / naturalWidth) * 100;
         const height = ((y_max - y_min) / naturalHeight) * 100;
         
-        // Flatten the Japanese sentences
-        const lines = b.lines.join('');
-        
-        // Mokuro explicit structural bindings
+        // Remove the destructive .join('') logic that ruins manga panel tracking
         const isVertical = b.vertical !== undefined ? b.vertical : ((y_max - y_min) > (x_max - x_min));
         
         return (
@@ -43,16 +40,23 @@ export const MangaOcrOverlay: React.FC<MangaOcrOverlayProps> = ({ blocks, natura
              }}
           >
              {/* The exact Mokuro White Box UI Implementation */}
-             <div className="w-full h-full opacity-0 group-hover:opacity-100 bg-white pointer-events-auto transition-opacity duration-150 flex items-center justify-center p-1 rounded-sm shadow-xl overflow-visible">
+             <div className="w-full h-full opacity-0 group-hover:opacity-100 bg-white pointer-events-auto transition-opacity duration-150">
                  <p 
-                   className="text-black font-semibold text-center whitespace-pre-wrap select-text leading-snug"
+                   className="text-black font-semibold select-text w-full h-full"
                    style={{
                      writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
                      fontSize: `${mangaFontSize}px`,
-                     fontFamily: mangaFontFamily
+                     fontFamily: mangaFontFamily,
+                     lineHeight: '1.1em',
+                     letterSpacing: '0.1em'
                    }}
                  >
-                   {lines}
+                   {b.lines.map((line: string, idx: number) => (
+                     <React.Fragment key={idx}>
+                       {line}
+                       {idx < b.lines.length - 1 && <br />}
+                     </React.Fragment>
+                   ))}
                  </p>
              </div>
           </div>

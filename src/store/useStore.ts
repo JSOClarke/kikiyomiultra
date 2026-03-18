@@ -22,6 +22,8 @@ interface StoreState {
   setReaderFontSize: (size: number) => void;
 
   // Manga Settings
+  mangaFitMode: 'fit-screen' | 'fit-width' | 'original';
+  setMangaFitMode: (mode: 'fit-screen' | 'fit-width' | 'original') => void;
   mangaFontSize: number;
   setMangaFontSize: (size: number) => void;
   mangaFontFamily: string;
@@ -96,6 +98,8 @@ export const useStore = create<StoreState>()(
       setReaderFontSize: (size) => set({ readerFontSize: size }),
 
       // Manga Settings
+      mangaFitMode: 'fit-screen',
+      setMangaFitMode: (mode) => set({ mangaFitMode: mode }),
       mangaFontSize: 16,
       setMangaFontSize: (size) => set({ mangaFontSize: size }),
       mangaFontFamily: 'Noto Sans JP, sans-serif',

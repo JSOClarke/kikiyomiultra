@@ -76,7 +76,7 @@ export const MangaPlayerLayout: React.FC<MangaPlayerLayoutProps> = ({ book }) =>
 
       {/* Main Structural Viewport */}
       <div 
-         className="flex-1 w-full h-full cursor-pointer relative" 
+         className="flex-1 w-full h-full cursor-pointer relative overflow-y-auto overflow-x-hidden" 
          onClick={handleCanvasClick}
       >
          <MangaCanvas page={currentPage} />

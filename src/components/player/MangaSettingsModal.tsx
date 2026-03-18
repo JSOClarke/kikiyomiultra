@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
-import { Settings2, X, Type, Search } from 'lucide-react';
+import { Settings2, X, Type, Search, Maximize } from 'lucide-react';
 
 export const MangaSettingsModal: React.FC = () => {
   const isMangaSettingsOpen = useStore(state => state.isMangaSettingsOpen);
@@ -11,6 +11,9 @@ export const MangaSettingsModal: React.FC = () => {
   
   const mangaFontFamily = useStore(state => state.mangaFontFamily);
   const setMangaFontFamily = useStore(state => state.setMangaFontFamily);
+
+  const mangaFitMode = useStore(state => state.mangaFitMode);
+  const setMangaFitMode = useStore(state => state.setMangaFitMode);
 
   if (!isMangaSettingsOpen) return null;
 
@@ -50,6 +53,26 @@ export const MangaSettingsModal: React.FC = () => {
              <p className="text-xs text-text-muted">Overrides the default Mokuro JSON font boundaries.</p>
           </div>
 
+          {/* Layout Scale Binding */}
+          <div className="space-y-3">
+             <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2 text-text font-medium">
+                   <Maximize size={16} className="text-sec" />
+                   Image Fit Mode
+                </div>
+             </div>
+             <select 
+               value={mangaFitMode}
+               // @ts-ignore
+               onChange={(e) => setMangaFitMode(e.target.value)}
+               className="w-full bg-bg border border-white/10 rounded-lg p-2.5 text-sm text-text focus:border-sec focus:ring-1 focus:ring-sec outline-none cursor-pointer"
+             >
+                <option value="fit-screen">Fit to Screen (Default)</option>
+                <option value="fit-width">Fit to Width (Scrollable)</option>
+                <option value="original">Original Aspect Size</option>
+             </select>
+          </div>
+
           {/* Typeface Override Dropdown */}
           <div className="space-y-3">
              <div className="flex justify-between items-center text-sm">
@@ -65,6 +88,7 @@ export const MangaSettingsModal: React.FC = () => {
              >
                 <option value="'Noto Sans JP', sans-serif">Noto Sans JP (Gothic)</option>
                 <option value="'Noto Serif JP', serif">Noto Serif JP (Mincho)</option>
+                <option value="'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">Yu Gothic (JP)</option>
                 <option value="system-ui, -apple-system, sans-serif">System Default OS</option>
                 <option value="monospace">System Monospace</option>
              </select>

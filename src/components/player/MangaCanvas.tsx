@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MangaPage } from '../../types';
 import { MangaOcrOverlay } from './MangaOcrOverlay';
+import { useStore } from '../../store/useStore';
 import { Loader2 } from 'lucide-react';
 
 interface MangaCanvasProps {
@@ -8,6 +9,8 @@ interface MangaCanvasProps {
 }
 
 export const MangaCanvas: React.FC<MangaCanvasProps> = ({ page }) => {
+  const mangaFitMode = useStore(state => state.mangaFitMode);
+  
   const [naturalWidth, setNaturalWidth] = useState<number>(0);
   const [naturalHeight, setNaturalHeight] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,8 +35,24 @@ export const MangaCanvas: React.FC<MangaCanvasProps> = ({ page }) => {
     setIsLoading(false);
   };
 
+  // Dynamically resolve CSS structural layouts based on mathematical fit constraints
+  let outerContainerClass = "relative w-full min-h-full flex justify-center bg-black ";
+  outerContainerClass += mangaFitMode === 'fit-screen' ? "items-center p-2 md:p-6" : "items-start pt-16 pb-4"; // Give header space for scrolling modes
+
+  let wrapperClass = "relative shadow-[0_0_25px_rgba(0,0,0,0.8)] inline-flex ";
+  wrapperClass += mangaFitMode === 'fit-screen' ? "max-w-full max-h-full" : (mangaFitMode === 'fit-width' ? "w-full sm:w-[90%] md:w-[80%]" : "");
+
+  let imageClass = "block select-none transition-opacity duration-300 rounded-sm ";
+  if (mangaFitMode === 'fit-screen') {
+     imageClass += "max-w-full max-h-[90vh] md:max-h-[95vh] w-auto h-auto object-contain";
+  } else if (mangaFitMode === 'fit-width') {
+     imageClass += "w-full h-auto object-contain";
+  } else {
+     imageClass += "max-w-none w-auto h-auto";
+  }
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center p-2 md:p-6 bg-black">
+    <div className={outerContainerClass}>
        {/* Background structural loading wrapper isolating image popping */}
        {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/50 backdrop-blur-sm">
@@ -42,12 +61,12 @@ export const MangaCanvas: React.FC<MangaCanvasProps> = ({ page }) => {
        )}
 
        {/* The Mathematical Scale Container */}
-       <div className="relative max-w-full max-h-full inline-flex shadow-[0_0_25px_rgba(0,0,0,0.8)]">
+       <div className={wrapperClass}>
           <img 
             src={page.imageUrl} 
             onLoad={handleImageLoaded}
             // Keep object containment rigorous so CSS overlays bind physically zero-overflow
-            className="block max-w-full max-h-[90vh] md:max-h-[95vh] w-auto h-auto object-contain rounded-md select-none transition-opacity duration-300"
+            className={imageClass}
             style={{ opacity: isLoading ? 0 : 1 }}
             alt="Manga Payload" 
           />
